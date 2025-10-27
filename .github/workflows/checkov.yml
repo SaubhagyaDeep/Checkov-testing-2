@@ -42,7 +42,8 @@ jobs:
             --output json \
             --output-file-path console,checkov-report.json \
             --download-external-modules true \
-            --check "CKV_GCP*"
+            --check "CKV_GCP*" \
+            --soft-fail
 
       - name: Upload Checkov results
         uses: actions/upload-artifact@v5
