@@ -32,16 +32,26 @@ jobs:
         run: |
           pip install checkov
 
-      - name: Run Checkov scan on dev environment
-        id: checkov
+      - name: Run Checkov scan on terraform
         run: |
           checkov \
             --directory terraform \
+            --framework terraform \
+            --output cli \
+            --output json \
+            --output-file-path console,checkov-report-terraform.json \
+            --download-external-modules true \
+            --check "CKV_GCP*" \
+            --soft-fail
+
+      - name: Run Checkov scan on terraform-2
+        run: |
+          checkov \
             --directory terraform-2 \
             --framework terraform \
             --output cli \
             --output json \
-            --output-file-path console,checkov-report.json \
+            --output-file-path console,checkov-report-terraform-2.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
             --soft-fail
@@ -51,5 +61,6 @@ jobs:
         if: always()
         with:
           name: checkov-report
-          path: checkov-report.json
-
+          path: |
+            checkov-report-terraform.json
+            checkov-report-terraform-2.json
