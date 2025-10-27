@@ -37,6 +37,7 @@ jobs:
         run: |
           checkov \
             --directory terraform \
+            --directory terraform-2 \
             --framework terraform \
             --output cli \
             --output json \
