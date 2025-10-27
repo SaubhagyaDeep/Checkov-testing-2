@@ -1,0 +1,53 @@
+name: Terraform Security Scan
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.checkov.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.checkov.yml'
+
+jobs:
+  checkov-scan:
+
+    name: Checkov IaC Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Checkov
+        run: |
+          pip install checkov
+
+      - name: Run Checkov scan on dev environment
+        id: checkov
+        run: |
+          checkov \
+            --directory terraform \
+            --framework terraform \
+            --output cli \
+            --output json \
+            --output-file-path console,checkov-report.json \
+            --download-external-modules true \
+            --check "CKV_GCP*"
+
+      - name: Upload Checkov results
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: checkov-report
+          path: checkov-report.json
+
