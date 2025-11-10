@@ -34,6 +34,7 @@ jobs:
             --output-file-path console,checkov-report-terraform.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
+            --quiet \
             --soft-fail
 
       - name: Run Checkov scan on common
@@ -46,6 +47,7 @@ jobs:
             --output-file-path console,checkov-report-common.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
+            --quiet \
             --soft-fail
 
       - name: Run Checkov scan on dev environment
@@ -58,6 +60,7 @@ jobs:
             --output-file-path console,checkov-report-dev.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
+            --quiet \
             --soft-fail
 
       - name: Run Checkov scan on production environment
@@ -70,30 +73,33 @@ jobs:
             --output-file-path console,checkov-report-production.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
+            --quiet \
             --soft-fail
 
-      - name: Run Checkov scan on insecure-storage module
-        run: |
-          checkov \
-            --directory terraform/modules/insecure-storage \
-            --framework terraform \
-            --output cli \
-            --output json \
-            --output-file-path console,checkov-report-insecure-storage.json \
-            --download-external-modules true \
-            --check "CKV_GCP*" \
-            --soft-fail
+      # - name: Run Checkov scan on insecure-storage module
+      #   run: |
+      #     checkov \
+      #       --directory terraform/modules/insecure-storage \
+      #       --framework terraform \
+      #       --output cli \
+      #       --output json \
+      #       --output-file-path console,checkov-report-insecure-storage.json \
+      #       --download-external-modules true \
+      #       --check "CKV_GCP*" \
+      #       --quiet \
+      #       --soft-fail
 
       - name: Run Checkov scan on vulnerable-db module
         run: |
           checkov \
-            --directory terraform/modules/vulnerable-db \
+            --directory terraform/modules/vulnerable-db, terraform/modules/insecure-storage \
             --framework terraform \
             --output cli \
             --output json \
             --output-file-path console,checkov-report-vulnerable-db.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
+            --quiet \
             --soft-fail
 
       - name: Upload Checkov results
@@ -106,5 +112,5 @@ jobs:
             checkov-report-common.json
             checkov-report-dev.json
             checkov-report-production.json
-            checkov-report-insecure-storage.json
+            # checkov-report-insecure-storage.json
             checkov-report-vulnerable-db.json
