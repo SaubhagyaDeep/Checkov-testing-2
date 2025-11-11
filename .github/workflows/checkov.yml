@@ -1,9 +1,9 @@
 name: Terraform Security Scan
 
 on:
-  push:
+  pull_request:
     branches:
-      - test/checkov
+      - main
       
 jobs:
   checkov-scan:
@@ -25,40 +25,14 @@ jobs:
         run: |
           pip install checkov
 
-      - name: Run Checkov scan on common
+      - name: Run Checkov diff scan
         run: |
           checkov \
-            --directory terraform/common \
+            --directory . \
             --framework terraform \
-            --output cli \
-            --output json \
-            --output-file-path console,checkov-report-common.json \
-            --download-external-modules true \
-            --check "CKV_GCP*" \
-            --quiet \
-            --soft-fail
-
-      - name: Run Checkov scan on environment
-        run: |
-          checkov \
-            --directory terraform/environments/ \
-            --framework terraform \
-            --output cli \
-            --output json \
-            --output-file-path console,checkov-report-environments.json \
-            --download-external-modules true \
-            --check "CKV_GCP*" \
-            --quiet \
-            --soft-fail
-
-      - name: Run Checkov scan on  modules
-        run: |
-          checkov \
-            --directory terraform/modules \
-            --framework terraform \
-            --output cli \
-            --output json \
-            --output-file-path console,checkov-report-modules.json \
+            --baseline origin/${{ github.base_ref }} \
+            --output cli,json \
+            --output-file-path console,checkov-report-diff.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
             --quiet \
@@ -69,7 +43,4 @@ jobs:
         if: always()
         with:
           name: checkov-report
-          path: |
-            checkov-report-common.json
-            checkov-report-environments.json
-            checkov-report-modules.json
+          path: checkov-report-diff.json
