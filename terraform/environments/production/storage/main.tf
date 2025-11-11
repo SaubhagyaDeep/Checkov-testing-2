@@ -50,18 +50,3 @@ resource "google_storage_bucket_iam_member" "production_public_write" {
   role   = "roles/storage.objectAdmin"
   member = "allUsers"
 }
-
-# VULNERABLE: Unencrypted production bucket for customer data
-resource "google_storage_bucket" "production_customer_data" {
-  name     = "momentum-production-customer-pii"
-  location = "US"
-  
-  uniform_bucket_level_access = false
-  
-  # VULNERABLE: No encryption specified for sensitive data
-  # encryption block is missing entirely
-  
-  versioning {
-    enabled = false
-  }
-}
