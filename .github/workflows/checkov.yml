@@ -29,7 +29,8 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v46
         with:
-          files: terraform/**
+          files: |
+            **/*.tf
           
       - name: Run Checkov diff scan
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -67,14 +68,9 @@ jobs:
             --quiet \
             --soft-fail
             
-      - name: Create empty report if no changes
-        if: steps.changed-files.outputs.any_changed == 'false'
-        run: |
-          echo '{"results": {"failed_checks": [], "passed_checks": [], "skipped_checks": []}}' > checkov-report-diff.json
-
       - name: Upload Checkov results
         uses: actions/upload-artifact@v5
-        if: always()
+        if: steps.changed-files.outputs.any_changed == 'true'
         with:
           name: checkov-report
           path: checkov-report-diff.json
