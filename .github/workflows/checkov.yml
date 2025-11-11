@@ -27,7 +27,7 @@ jobs:
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@v47
         with:
           files: |
             **/*.tf
@@ -39,21 +39,21 @@ jobs:
         run: |
           set -euo pipefail
 
-          mapfile -t files < <(printf '%s\n' "$CHANGED_TF_FILES" | tr ' ' '\n' | sed '/^$/d')
+          args=()
+          for file in $CHANGED_TF_FILES; do
+            args+=(--file "$file")
+          done
 
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "tj-actions/changed-files reported changes, but none are Terraform files. Skipping."
+          if [ ${#args[@]} -eq 0 ]; then
+            echo "No Terraform files changed; skipping."
             exit 0
           fi
 
-          args=()
-          for file in "${files[@]}"; do
-            args+=("--file")
-            args+=("$file")
+          echo "Scanning changed Terraform file(s):"
+          for ((i=1; i<${#args[@]}; i+=2)); do
+            echo " - ${args[$i]}"
           done
 
-          echo "Scanning ${#files[@]} changed Terraform file(s):"
-          printf ' - %s\n' "${files[@]}"
 
           checkov \
             "${args[@]}" \

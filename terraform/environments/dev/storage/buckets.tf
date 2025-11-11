@@ -67,8 +67,3 @@ resource "google_storage_bucket" "vulnerable_public_bucket" {
   uniform_bucket_level_access = false
 }
 
-resource "google_storage_bucket_iam_member" "public_access" {
-  bucket = google_storage_bucket.vulnerable_public_bucket.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
-}
