@@ -1,9 +1,9 @@
 name: Terraform Security Scan
 
 on:
-  push:
+  pull_request:
     branches:
-      - test/checkov
+      - main
       
 jobs:
   checkov-scan:
@@ -25,51 +25,56 @@ jobs:
         run: |
           pip install checkov
 
-      - name: Run Checkov scan on common
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: terraform/**
+          
+      - name: Run Checkov diff scan
+        if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          CHANGED_TF_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          checkov \
-            --directory terraform/common \
-            --framework terraform \
-            --output cli \
-            --output json \
-            --output-file-path console,checkov-report-common.json \
-            --download-external-modules true \
-            --check "CKV_GCP*" \
-            --quiet \
-            --soft-fail
+          set -euo pipefail
 
-      - name: Run Checkov scan on environment
-        run: |
-          checkov \
-            --directory terraform/environments/ \
-            --framework terraform \
-            --output cli \
-            --output json \
-            --output-file-path console,checkov-report-environments.json \
-            --download-external-modules true \
-            --check "CKV_GCP*" \
-            --quiet \
-            --soft-fail
+          mapfile -t files < <(printf '%s\n' "$CHANGED_TF_FILES" | tr ' ' '\n' | sed '/^$/d')
 
-      - name: Run Checkov scan on  modules
-        run: |
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "tj-actions/changed-files reported changes, but none are Terraform files. Skipping."
+            exit 0
+          fi
+
+          args=()
+          for file in "${files[@]}"; do
+            args+=("--file")
+            args+=("$file")
+          done
+
+          echo "Scanning ${#files[@]} changed Terraform file(s):"
+          printf ' - %s\n' "${files[@]}"
+
           checkov \
-            --directory terraform/modules \
+            "${args[@]}" \
             --framework terraform \
             --output cli \
             --output json \
-            --output-file-path console,checkov-report-modules.json \
+            --output-file-path console,checkov-report-diff.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
+            --repo-root-for-plan-enrichment . \
+            --include-all-checkov-policies \
             --quiet \
             --soft-fail
+            
+      - name: Create empty report if no changes
+        if: steps.changed-files.outputs.any_changed == 'false'
+        run: |
+          echo '{"results": {"failed_checks": [], "passed_checks": [], "skipped_checks": []}}' > checkov-report-diff.json
 
       - name: Upload Checkov results
         uses: actions/upload-artifact@v5
         if: always()
         with:
           name: checkov-report
-          path: |
-            checkov-report-common.json
-            checkov-report-environments.json
-            checkov-report-modules.json
+          path: checkov-report-diff.json

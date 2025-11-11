@@ -58,3 +58,17 @@ resource "google_storage_bucket_iam_member" "all_project_users" {
 resource "random_id" "bucket_suffix" {
   byte_length = 8
 }
+
+resource "google_storage_bucket" "vulnerable_public_bucket" {
+  name          = "my-vulnerable-public-bucket-for-testing"
+  location      = "US"
+  force_destroy = true
+
+  uniform_bucket_level_access = false
+}
+
+resource "google_storage_bucket_iam_member" "public_access" {
+  bucket = google_storage_bucket.vulnerable_public_bucket.name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+}
