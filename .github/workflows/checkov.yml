@@ -25,19 +25,30 @@ jobs:
         run: |
           pip install checkov
 
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: terraform/**
+          
       - name: Run Checkov diff scan
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           checkov \
-            --directory terraform/ \
+            --file ${{ steps.changed-files.outputs.all_changed_files }} \
             --framework terraform \
-            --baseline origin/${{ github.base_ref }} \
-            --output cli\
+            --output cli \
             --output json \
             --output-file-path console,checkov-report-diff.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
             --quiet \
             --soft-fail
+            
+      - name: Create empty report if no changes
+        if: steps.changed-files.outputs.any_changed == 'false'
+        run: |
+          echo '{"results": {"failed_checks": [], "passed_checks": [], "skipped_checks": []}}' > checkov-report-diff.json
 
       - name: Upload Checkov results
         uses: actions/upload-artifact@v5
