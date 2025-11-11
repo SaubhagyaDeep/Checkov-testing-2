@@ -28,7 +28,7 @@ jobs:
       - name: Run Checkov diff scan
         run: |
           checkov \
-            --directory  \
+            --directory terraform/ \
             --framework terraform \
             --baseline origin/${{ github.base_ref }} \
             --output cli\
