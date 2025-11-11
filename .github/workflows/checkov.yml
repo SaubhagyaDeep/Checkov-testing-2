@@ -28,10 +28,11 @@ jobs:
       - name: Run Checkov diff scan
         run: |
           checkov \
-            --directory . \
+            --directory  \
             --framework terraform \
             --baseline origin/${{ github.base_ref }} \
-            --output cli,json \
+            --output cli\
+            --output json \
             --output-file-path console,checkov-report-diff.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
