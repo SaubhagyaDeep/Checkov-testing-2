@@ -79,7 +79,7 @@ jobs:
             --output sarif \
             --output-file-path console,checkov-report-diff.json,results/checkov-diff.sarif \
             --quiet \
-            --soft-fail true
+            --soft-fail
 
       - name: Upload Checkov JSON (artifact)
         if: steps.changed-files.outputs.any_changed == 'true'
