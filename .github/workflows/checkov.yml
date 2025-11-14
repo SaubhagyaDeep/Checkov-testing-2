@@ -2,14 +2,23 @@ name: Terraform Security Scan
 
 on:
   pull_request:
-    branches:
-      - main
-      
+    branches: [ main ]
+    paths:
+      - '**/*.tf'
+      - '**/*.tfvars'
+      - '.checkov.yml'
+      - '.checkov.yaml'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+  security-events: write   # ⬅ required for SARIF upload
+
 jobs:
   checkov-scan:
-
     name: Checkov IaC Security Scan
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v5
@@ -22,8 +31,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Checkov
-        run: |
-          pip install checkov
+        run: pip install --upgrade checkov
 
       - name: Get changed files
         id: changed-files
@@ -31,14 +39,16 @@ jobs:
         with:
           files: |
             **/*.tf
-          
-      - name: Run Checkov diff scan
+            **/*.tfvars
+
+      - name: Run Checkov diff scan (monitor mode)
         if: steps.changed-files.outputs.any_changed == 'true'
         env:
           CHANGED_TF_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           set -euo pipefail
 
+          # Build --file args directly from the space-separated list
           args=()
           for file in $CHANGED_TF_FILES; do
             args+=(--file "$file")
@@ -54,23 +64,34 @@ jobs:
             echo " - ${args[$i]}"
           done
 
+          mkdir -p results
 
+          # Emit CLI + JSON (artifact) + SARIF (for inline PR annotations)
           checkov \
             "${args[@]}" \
             --framework terraform \
-            --output cli \
-            --output json \
-            --output-file-path console,checkov-report-diff.json \
             --download-external-modules true \
             --check "CKV_GCP*" \
-            --repo-root-for-plan-enrichment . \
             --include-all-checkov-policies \
+            --repo-root-for-plan-enrichment . \
+            --output cli \
+            --output json \
+            --output sarif \
+            --output-file-path console,checkov-report-diff.json,results/checkov-diff.sarif \
             --quiet \
-            --soft-fail
-            
-      - name: Upload Checkov results
-        uses: actions/upload-artifact@v5
+            --soft-fail true
+
+      - name: Upload Checkov JSON (artifact)
         if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/upload-artifact@v5
         with:
-          name: checkov-report
+          name: checkov-report-diff
           path: checkov-report-diff.json
+
+      - name: Upload SARIF to Code Scanning (best effort)
+        if: steps.changed-files.outputs.any_changed == 'true' && hashFiles('results/checkov-diff.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results/checkov-diff.sarif
+          category: checkov-diff
