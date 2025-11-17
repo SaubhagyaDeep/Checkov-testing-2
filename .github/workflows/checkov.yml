@@ -104,8 +104,8 @@ jobs:
             const lines = [];
             lines.push('### Checkov scan results');
             lines.push('');
-            lines.push(`- Failed checks: **${failedChecks.length}** :cross_mark:`);
-            lines.push(`- Passed checks: ${passedChecks.length} :green_check_mark:`);
+            lines.push(`- Failed checks: **${failedChecks.length}** :x:`);
+            lines.push(`- Passed checks: ${passedChecks.length} :white_tick: `);
             lines.push(`- Skipped checks: ${skippedChecks.length}`);
 
             if (failedChecks.length) {
