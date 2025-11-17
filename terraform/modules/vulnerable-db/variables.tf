@@ -30,7 +30,7 @@ variable "deletion_protection" {
 variable "enable_backup" {
   description = "Enable database backups"
   type        = bool
-  default     = false  # VULNERABLE: Defaults to false
+  default     = true  # VULNERABLE: Defaults to false
 }
 
 variable "enable_public_ip" {
