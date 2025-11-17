@@ -104,8 +104,8 @@ jobs:
             const lines = [];
             lines.push('### Checkov scan results');
             lines.push('');
-            lines.push(`- Failed checks: **${failedChecks.length}**`);
-            lines.push(`- Passed checks: ${passedChecks.length}`);
+            lines.push(`- Failed checks: **${failedChecks.length}** :cross_mark:`);
+            lines.push(`- Passed checks: ${passedChecks.length} :green_check_mark:`);
             lines.push(`- Skipped checks: ${skippedChecks.length}`);
 
             if (failedChecks.length) {
@@ -115,8 +115,14 @@ jobs:
               failedChecks.slice(0, limit).forEach((check) => {
                 const checkId = check.check_id || 'UNKNOWN';
                 const file = check.file_path || check.file_abs_path || 'unknown file';
-                const resource = check.resource || 'unknown resource';
-                lines.push(`- \`${checkId}\` · ${resource} (${file})`);
+                const checkName = check.check_name || 'unknown check';
+                const [startLine, endLine] = check.file_line_range || [];
+                const range = startLine
+                  ? startLine === endLine
+                    ? `:${startLine}`
+                    : `:${startLine}-${endLine}`
+                  : '';
+                lines.push(`- \`${checkId}\` · ${checkName} (${file}${range})`);
               });
 
               if (failedChecks.length > limit) {
@@ -126,7 +132,7 @@ jobs:
             }
 
             lines.push('');
-            lines.push('Artifact: `checkov-report-diff.json`');
+            lines.push('Artifact: `checkov-report`');
 
             await github.rest.issues.createComment({
               owner,
