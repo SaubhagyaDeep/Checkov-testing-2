@@ -68,6 +68,70 @@ jobs:
             --quiet \
             --soft-fail
             
+      - name: Comment Checkov summary on PR
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request?.number;
+
+            if (!prNumber) {
+              core.info('No pull request context; skipping comment');
+              return;
+            }
+
+            const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
+            const reportPath = path.join(workspace, 'checkov-report-diff.json');
+
+            if (!fs.existsSync(reportPath)) {
+              core.info('Checkov report not found; skipping comment');
+              return;
+            }
+
+            const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const results = report.results || {};
+            const failedChecks = results.failed_checks || [];
+            const passedChecks = results.passed_checks || [];
+            const skippedChecks = results.skipped_checks || [];
+
+            const lines = [];
+            lines.push('### Checkov scan results');
+            lines.push('');
+            lines.push(`- Failed checks: **${failedChecks.length}**`);
+            lines.push(`- Passed checks: ${passedChecks.length}`);
+            lines.push(`- Skipped checks: ${skippedChecks.length}`);
+
+            if (failedChecks.length) {
+              const limit = 10;
+              lines.push('');
+              lines.push('**Failed checks (up to 10 shown):**');
+              failedChecks.slice(0, limit).forEach((check) => {
+                const checkId = check.check_id || 'UNKNOWN';
+                const file = check.file_path || check.file_abs_path || 'unknown file';
+                const resource = check.resource || 'unknown resource';
+                lines.push(`- \`${checkId}\` · ${resource} (${file})`);
+              });
+
+              if (failedChecks.length > limit) {
+                lines.push('');
+                lines.push(`_(+${failedChecks.length - limit} more failures. See artifact for the full report.)_`);
+              }
+            }
+
+            lines.push('');
+            lines.push('Artifact: `checkov-report-diff.json`');
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
+              body: lines.join('\n')
+            });
+
       - name: Upload Checkov results
         uses: actions/upload-artifact@v5
         if: steps.changed-files.outputs.any_changed == 'true'
