@@ -3,7 +3,7 @@ name: Terraform Security Scan (Periodic)
 on:
   schedule:
     # Every 5 minutes
-    - cron: "*/5 * * * *"
+    # - cron: "*/5 * * * *"
   # Optional: allow manual triggering from the Actions tab
   workflow_dispatch:
 
