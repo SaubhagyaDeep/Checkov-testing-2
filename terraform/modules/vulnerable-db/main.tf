@@ -21,7 +21,7 @@ resource "google_sql_database_instance" "main" {
         point_in_time_recovery_enabled = false
         # VULNERABLE: Short backup retention
         backup_retention_settings {
-          retained_backups = 3
+          retained_backups = 1
         }
       }
     }
