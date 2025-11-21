@@ -1,0 +1,57 @@
+name: Terraform Security Scan (Periodic)
+
+on:
+  schedule:
+    # Every 5 minutes
+    - cron: "*/5 * * * *"
+  # Optional: allow manual triggering from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  checkov-full-scan:
+    name: Checkov Full Repo Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install Checkov
+        run: |
+          pip install checkov
+
+      - name: Run Checkov full scan
+        run: |
+          set -euo pipefail
+
+          checkov \
+            --directory . \
+            --framework terraform \
+            --output cli \
+            --output json \
+            --output-file-path console,checkov-report-full.json \
+            --download-external-modules true \
+            --quiet \
+            --soft-fail
+
+      - name: Upload Checkov results
+        uses: actions/upload-artifact@v5
+        with:
+          name: checkov-report-full
+          path: checkov-report-full.json
+
+      - name: Display summary
+        run: |
+          echo "## ⏱️ Scheduled Checkov Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Scanned scope:" >> $GITHUB_STEP_SUMMARY
+          echo "- Repository root (recursive)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Scan**
