@@ -54,4 +54,4 @@ jobs:
           echo "Scanned scope:" >> $GITHUB_STEP_SUMMARY
           echo "- Repository root (recursive)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 **Scan**
+          echo "📊 **Scan**"
