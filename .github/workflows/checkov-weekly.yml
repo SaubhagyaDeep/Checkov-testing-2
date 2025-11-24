@@ -70,18 +70,21 @@ jobs:
         if: always()
         with:
           sarif_file: checkov-report-common.sarif
+          category: checkov-common
 
       - name: Upload SARIF results for environments
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: checkov-report-environments.sarif
+          category: checkov-environments
 
       - name: Upload SARIF results for modules
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: checkov-report-modules.sarif
+          category: checkov-modules
 
       - name: Upload Checkov results
         uses: actions/upload-artifact@v5
