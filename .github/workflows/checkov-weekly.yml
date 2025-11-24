@@ -1,17 +1,14 @@
-name: Terraform Security Scan (Periodic)
-
+name: Run scans every 5 minutes
 on:
   schedule:
-    # Every 5 minutes
-    # - cron: "*/5 * * * *"
-  # Optional: allow manual triggering from the Actions tab
-  workflow_dispatch:
+    - cron: "*/5 * * * *"
+
 
 jobs:
-  checkov-full-scan:
-    name: Checkov Full Repo Scan
-    runs-on: ubuntu-latest
+  checkov-scan:
 
+    name: Checkov IaC Security Scan
+    runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v5
@@ -21,37 +18,57 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install Checkov
         run: |
           pip install checkov
 
-      - name: Run Checkov full scan
+      - name: Run Checkov scan on common
         run: |
-          set -euo pipefail
-
           checkov \
-            --directory . \
+            --directory terraform/common \
             --framework terraform \
             --output cli \
             --output json \
-            --output-file-path console,checkov-report-full.json \
+            --output-file-path console,checkov-report-common.json \
             --download-external-modules true \
+            --check "CKV_GCP*" \
+            --quiet \
+            --soft-fail
+
+      - name: Run Checkov scan on environment
+        run: |
+          checkov \
+            --directory terraform/environments/ \
+            --framework terraform \
+            --output cli \
+            --output json \
+            --output-file-path console,checkov-report-environments.json \
+            --download-external-modules true \
+            --check "CKV_GCP*" \
+            --quiet \
+            --soft-fail
+
+      - name: Run Checkov scan on  modules
+        run: |
+          checkov \
+            --directory terraform/modules \
+            --framework terraform \
+            --output cli \
+            --output json \
+            --output-file-path console,checkov-report-modules.json \
+            --download-external-modules true \
+            --check "CKV_GCP*" \
             --quiet \
             --soft-fail
 
       - name: Upload Checkov results
         uses: actions/upload-artifact@v5
+        if: always()
         with:
-          name: checkov-report-full
-          path: checkov-report-full.json
-
-      - name: Display summary
-        run: |
-          echo "## ⏱️ Scheduled Checkov Security Scan" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Scanned scope:" >> $GITHUB_STEP_SUMMARY
-          echo "- Repository root (recursive)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 **Scan**"
+          name: checkov-report
+          path: |
+            checkov-report-common.json
+            checkov-report-environments.json
+            checkov-report-modules.json
