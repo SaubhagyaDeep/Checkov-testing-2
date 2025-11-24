@@ -1,7 +1,8 @@
 name: Run scans every 5 minutes
 on:
   schedule:
-    - cron: "*/20 * * * *"
+    - cron: "30 4 1,15 * *" # 1st and 15th of every month at 10:00 AM IST
+  workflow_dispatch:
 
 
 jobs:
