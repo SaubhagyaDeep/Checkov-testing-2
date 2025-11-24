@@ -1,15 +1,16 @@
-name: Run scans every 5 minutes
+name: Run scans twice monthly
 on:
   schedule:
     - cron: "30 4 1,15 * *" # 1st and 15th of every month at 10:00 AM IST
   workflow_dispatch:
 
-
 jobs:
   checkov-scan:
-
     name: Checkov IaC Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v5
@@ -31,8 +32,8 @@ jobs:
             --directory terraform/common \
             --framework terraform \
             --output cli \
-            --output json \
-            --output-file-path console,checkov-report-common.json \
+            --output sarif \
+            --output-file-path console,checkov-report-common.sarif \
             --download-external-modules true \
             --check "CKV_GCP*" \
             --quiet \
@@ -44,8 +45,8 @@ jobs:
             --directory terraform/environments/ \
             --framework terraform \
             --output cli \
-            --output json \
-            --output-file-path console,checkov-report-environments.json \
+            --output sarif \
+            --output-file-path console,checkov-report-environments.sarif \
             --download-external-modules true \
             --check "CKV_GCP*" \
             --quiet \
@@ -57,12 +58,21 @@ jobs:
             --directory terraform/modules \
             --framework terraform \
             --output cli \
-            --output json \
-            --output-file-path console,checkov-report-modules.json \
+            --output sarif \
+            --output-file-path console,checkov-report-modules.sarif \
             --download-external-modules true \
             --check "CKV_GCP*" \
             --quiet \
             --soft-fail
+
+      - name: Upload SARIF results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: |
+            checkov-report-common.sarif
+            checkov-report-environments.sarif
+            checkov-report-modules.sarif
 
       - name: Upload Checkov results
         uses: actions/upload-artifact@v5
@@ -70,6 +80,6 @@ jobs:
         with:
           name: checkov-report
           path: |
-            checkov-report-common.json
-            checkov-report-environments.json
-            checkov-report-modules.json
+            checkov-report-common.sarif
+            checkov-report-environments.sarif
+            checkov-report-modules.sarif
