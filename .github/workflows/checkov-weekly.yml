@@ -1,7 +1,7 @@
 name: Run scans every 5 minutes
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/20 * * * *"
 
 
 jobs:
